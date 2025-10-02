@@ -1,0 +1,62 @@
+# Compiled binaries
+dedup
+*.o
+*.obj
+*.exe
+
+# Build directories (if any)
+build/
+bin/
+Debug/
+Release/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+
+# Temporary files
+*.log
+*.tmp
+
+# Metadata / runtime files
+metadata.json
+chunks/
+
+# Python / Flask (for DedupWeb)
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+# Node modules
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Local environment variables
+.env
+
+# Uploaded files (temporary)
+uploads/
+
+# Retrieved files created by the app
+retrieved_*
+
+# Log files
+*.log
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Vite cache
+.vite/
+
