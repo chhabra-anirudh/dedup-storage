@@ -1,5 +1,4 @@
 # Compiled binaries
-dedup
 *.o
 *.obj
 *.exe
@@ -34,6 +33,7 @@ __pycache__/
 *.pyo
 .env
 venv/
+
 # Node modules
 node_modules/
 
@@ -59,4 +59,3 @@ Thumbs.db
 
 # Vite cache
 .vite/
-
