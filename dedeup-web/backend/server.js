@@ -4,6 +4,7 @@ const path = require('path');
 const { exec } = require('child_process');
 const cors = require('cors');
 const fs = require('fs');
+const os = require('os'); // For detecting platform
 
 const app = express();
 const PORT = 5001;
@@ -22,9 +23,12 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// CLI path
-const dedupCmd = path.resolve(__dirname, '../../dedup');
+// Detect OS and set dedup binary
 const cwdRoot = path.resolve(__dirname, '../../');
+let dedupCmd = path.resolve(cwdRoot, 'dedup');
+if (os.platform() === 'win32') {
+  dedupCmd += '.exe';
+}
 
 // ------------------------
 // Upload
@@ -39,7 +43,7 @@ app.post('/upload', upload.single('file'), (req, res) => {
   const storePath = path.join(cwdRoot, baseName);
   fs.renameSync(tempPath, storePath);
 
-  exec(`${dedupCmd} store "${baseName}" 4096`, { cwd: cwdRoot }, (err, stdout, stderr) => {
+  exec(`"${dedupCmd}" store "${baseName}" 4096`, { cwd: cwdRoot }, (err, stdout, stderr) => {
     if (fs.existsSync(storePath)) fs.unlinkSync(storePath);
 
     if (err) {
@@ -55,7 +59,7 @@ app.post('/upload', upload.single('file'), (req, res) => {
 // List files with stats
 // ------------------------
 app.get('/files', (req, res) => {
-  exec(`${dedupCmd} list`, { cwd: cwdRoot }, (err, stdout, stderr) => {
+  exec(`"${dedupCmd}" list`, { cwd: cwdRoot }, (err, stdout, stderr) => {
     if (err) return res.status(500).json({ success: false, message: 'Cannot list files' });
 
     const files = [];
@@ -69,7 +73,7 @@ app.get('/files', (req, res) => {
         if (parts.length < 6) continue;
 
         const displayName = parts[0].replace(/^-\s*/, '');
-        const cliName = displayName; // exact CLI filename
+        const cliName = displayName;
 
         const chunks = parseInt(parts[1].split(':')[1].replace(/,/g,'').trim()) || 0;
         const avgChunk = parseFloat(parts[2].split(':')[1].replace('bytes','').trim()) || 0;
@@ -96,24 +100,21 @@ app.post('/retrieve', (req, res) => {
 
   const tempRetrievedPath = path.join(cwdRoot, 'retrieved_' + filename);
 
-  // Run CLI retrieve
-  exec(`${dedupCmd} retrieve "${filename}"`, { cwd: cwdRoot }, (err, stdout, stderr) => {
+  exec(`"${dedupCmd}" retrieve "${filename}"`, { cwd: cwdRoot }, (err, stdout, stderr) => {
     if (err) {
       console.error('Dedup CLI retrieve error:', stderr);
       return res.status(500).json({ success: false, message: 'Retrieve failed' });
     }
 
-    // Check if CLI created the file
     if (!fs.existsSync(tempRetrievedPath)) {
       console.error('Retrieved file not found:', tempRetrievedPath);
       return res.status(500).json({ success: false, message: 'File not found after retrieval' });
     }
 
-    // Stream file to client
     res.download(tempRetrievedPath, filename, (err) => {
       if (err) console.error('Error sending file:', err);
 
-      // Delete the retrieved file immediately after sending
+      // Delete retrieved file after sending
       if (fs.existsSync(tempRetrievedPath)) {
         try {
           fs.unlinkSync(tempRetrievedPath);
@@ -126,7 +127,6 @@ app.post('/retrieve', (req, res) => {
   });
 });
 
-
 // ------------------------
 // Delete
 // ------------------------
@@ -134,7 +134,7 @@ app.post('/delete', (req, res) => {
   const { filename } = req.body;
   if (!filename) return res.status(400).json({ success: false, message: 'Filename missing' });
 
-  exec(`${dedupCmd} delete "${filename}"`, { cwd: cwdRoot }, (err, stdout, stderr) => {
+  exec(`"${dedupCmd}" delete "${filename}"`, { cwd: cwdRoot }, (err, stdout, stderr) => {
     if (err) {
       console.error('Dedup CLI delete error:', stderr);
       return res.status(500).json({ success: false, message: 'Delete failed' });
