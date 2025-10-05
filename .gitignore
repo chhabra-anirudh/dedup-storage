@@ -1,7 +1,6 @@
 # Compiled binaries
 *.o
 *.obj
-*.exe
 
 # Build directories (if any)
 build/

@@ -1,14 +1,25 @@
 #!/bin/bash
-# Make sure OpenSSL is installed: brew install openssl@3
-# Make script executable: chmod +x build-mac.sh
 
 echo "Compiling dedup for macOS..."
 
-g++ -std=c++20 src/*.cpp -Iinclude -lssl -lcrypto -lz -o dedup
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+SRC_DIR="$ROOT_DIR/src"
+INCLUDE_DIR="$ROOT_DIR/include"
+OUTPUT="$ROOT_DIR/dedup"
+
+# Homebrew OpenSSL path
+OPENSSL_DIR=$(brew --prefix openssl@3)
+
+# Remove old executable
+rm -f "$OUTPUT"
+
+clang++ -std=c++20 "$SRC_DIR"/*.cpp -I"$INCLUDE_DIR" \
+    -I"$OPENSSL_DIR/include" -L"$OPENSSL_DIR/lib" \
+    -lssl -lcrypto -lz \
+    -o "$OUTPUT"
 
 if [ $? -eq 0 ]; then
-    echo "Compilation successful! Binary: ./dedup"
+    echo "Compilation succeeded! Executable: $OUTPUT"
 else
     echo "Compilation failed."
 fi
-
