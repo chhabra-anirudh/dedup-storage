@@ -25,9 +25,11 @@ const upload = multer({ storage });
 
 // Detect OS and set dedup binary
 const cwdRoot = path.resolve(__dirname, '../../');
-let dedupCmd = path.resolve(cwdRoot, 'dedup');
+let dedupCmd;
 if (os.platform() === 'win32') {
-  dedupCmd += '.exe';
+    dedupCmd = path.join(cwdRoot, 'executables', 'win-x64', 'dedup.exe');
+} else if (os.platform() === 'darwin') {
+    dedupCmd = path.join(cwdRoot, 'executables', 'mac-arm64', 'dedup');
 }
 
 // ------------------------
