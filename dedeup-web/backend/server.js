@@ -48,11 +48,9 @@ if (platform === 'win32') {
     }
 } else if (platform === 'linux') {
     if (arch === 'x64') {
-        dedupCmd = path.join(cwdRoot, 'executables', 'linux-x64', 'dedup');
+        dedupCmd = path.join(cwdRoot, 'executables', 'linux', 'dedup-x64');
     } else if (arch === 'ia32') {
-        dedupCmd = path.join(cwdRoot, 'executables', 'linux-x86', 'dedup');
-    } else if (arch === 'arm64') {
-        dedupCmd = path.join(cwdRoot, 'executables', 'linux-arm64', 'dedup');
+        dedupCmd = path.join(cwdRoot, 'executables', 'linux', 'dedup-x86');
     } else {
         throw new Error(`Unsupported Linux architecture: ${arch}`);
     }
