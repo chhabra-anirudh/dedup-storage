@@ -1,13 +1,22 @@
 import React, { useEffect, useState } from "react";
 
+// Utility: Convert bytes to human-readable format
+function formatBytes(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const value = bytes / Math.pow(k, i);
+  return `${value.toFixed(2)} ${sizes[i]}`;
+}
+
 export default function FileList({ refreshKey }) {
   const [files, setFiles] = useState([]);
   const [overallStats, setOverallStats] = useState({
     totalFiles: 0,
+    potentialChunks: 0,
     uniqueChunks: 0,
-    totalCompressed: 0,
-    totalOriginal: 0,
-    totalSavings: 0,
+    dedupRatePercent: 0,
   });
 
   const fetchFiles = async () => {
@@ -16,15 +25,7 @@ export default function FileList({ refreshKey }) {
       const data = await res.json();
       if (data.success) {
         setFiles(data.files);
-
-        // Compute overall stats
-        const totalFiles = data.files.length;
-        const uniqueChunks = data.files.reduce((sum, f) => sum + f.chunks, 0);
-        const totalCompressed = data.files.reduce((sum, f) => sum + f.compressed, 0);
-        const totalOriginal = data.files.reduce((sum, f) => sum + f.original, 0);
-        const totalSavings = totalOriginal - totalCompressed;
-
-        setOverallStats({ totalFiles, uniqueChunks, totalCompressed, totalOriginal, totalSavings });
+        if (data.overallStats) setOverallStats(data.overallStats);
       }
     } catch (err) {
       console.error(err);
@@ -72,11 +73,18 @@ export default function FileList({ refreshKey }) {
         boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
         color: "#fff"
       }}>
-        <div><strong>Total Files:</strong> {overallStats.totalFiles}</div>
-        <div><strong>Unique Chunks:</strong> {overallStats.uniqueChunks}</div>
-        <div><strong>Compressed:</strong> {overallStats.totalCompressed.toLocaleString()} B</div>
-        <div><strong>Original:</strong> {overallStats.totalOriginal.toLocaleString()} B</div>
-        <div><strong>Total Savings:</strong> {overallStats.totalSavings.toLocaleString()} B</div>
+        <div title="Total number of files stored in the system">
+          <strong>Total Files:</strong> {overallStats.totalFiles}
+        </div>
+        <div title="Sum of chunks each file would occupy if no deduplication was done">
+          <strong>Potential Chunks:</strong> {overallStats.potentialChunks}
+        </div>
+        <div title="Actual unique chunks stored in the system after deduplication">
+          <strong>Unique Chunks Stored:</strong> {overallStats.uniqueChunks}
+        </div>
+        <div title="Percentage of chunk storage saved by deduplication">
+          <strong>Deduplication Efficiency:</strong> {overallStats.dedupRatePercent} %
+        </div>
       </div>
 
       {/* File Table */}
@@ -90,7 +98,7 @@ export default function FileList({ refreshKey }) {
         }}>
           <thead>
             <tr style={{ borderBottom: "2px solid #555" }}>
-              {["File","Chunks","Avg Chunk (B)","Original Size","Compressed Size","Savings (B)","Actions"].map(h => (
+              {["File","Chunks","Avg Chunk","Original Size","Compressed Size","Savings (%)","Actions"].map(h => (
                 <th key={h} style={{ padding: "12px", textAlign: "left", color: "#ccc" }}>{h}</th>
               ))}
             </tr>
@@ -109,11 +117,11 @@ export default function FileList({ refreshKey }) {
                     onMouseLeave={e => e.currentTarget.style.background = "#2a2a2a"}>
                   <td style={{ padding: "10px" }}>{f.name}</td>
                   <td style={{ padding: "10px" }}>{f.chunks}</td>
-                  <td style={{ padding: "10px" }}>{f.avgChunk.toFixed(2)}</td>
-                  <td style={{ padding: "10px" }}>{f.original.toLocaleString()} B</td>
-                  <td style={{ padding: "10px" }}>{f.compressed.toLocaleString()} B</td>
+                  <td style={{ padding: "10px" }}>{formatBytes(f.avgChunk)}</td>
+                  <td style={{ padding: "10px" }}>{formatBytes(f.original)}</td>
+                  <td style={{ padding: "10px" }}>{formatBytes(f.compressed)}</td>
                   <td style={{ padding: "10px", color: savingsColor, fontWeight: "bold" }}>
-                    {f.savings.toLocaleString()} B
+                    {f.savings.toFixed(2)} %
                   </td>
                   <td style={{ padding: "10px", display: "flex", gap: "0.5rem" }}>
                     <button onClick={() => handleRetrieve(f.name)} style={{
