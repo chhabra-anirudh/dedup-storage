@@ -23,13 +23,41 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Detect OS and set dedup binary
+// Detect OS and architecture, set dedup binary
 const cwdRoot = path.resolve(__dirname, '../../');
 let dedupCmd;
-if (os.platform() === 'win32') {
-    dedupCmd = path.join(cwdRoot, 'executables', 'win-x64', 'dedup.exe');
-} else if (os.platform() === 'darwin') {
-    dedupCmd = path.join(cwdRoot, 'executables', 'mac-arm64', 'dedup');
+
+const platform = os.platform();       // 'win32', 'darwin', 'linux'
+const arch = os.arch();               // 'x64', 'ia32', 'arm64', etc.
+
+if (platform === 'win32') {
+    if (arch === 'x64') {
+        dedupCmd = path.join(cwdRoot, 'executables', 'win-x64', 'dedup.exe');
+    } else if (arch === 'ia32') {
+        dedupCmd = path.join(cwdRoot, 'executables', 'win-x86', 'dedup.exe');
+    } else {
+        throw new Error(`Unsupported Windows architecture: ${arch}`);
+    }
+} else if (platform === 'darwin') {
+    if (arch === 'arm64') {
+        dedupCmd = path.join(cwdRoot, 'executables', 'mac-arm64', 'dedup');
+    } else if (arch === 'x64') {
+        dedupCmd = path.join(cwdRoot, 'executables', 'mac-x64', 'dedup'); // optional future build
+    } else {
+        throw new Error(`Unsupported macOS architecture: ${arch}`);
+    }
+} else if (platform === 'linux') {
+    if (arch === 'x64') {
+        dedupCmd = path.join(cwdRoot, 'executables', 'linux-x64', 'dedup');
+    } else if (arch === 'ia32') {
+        dedupCmd = path.join(cwdRoot, 'executables', 'linux-x86', 'dedup');
+    } else if (arch === 'arm64') {
+        dedupCmd = path.join(cwdRoot, 'executables', 'linux-arm64', 'dedup');
+    } else {
+        throw new Error(`Unsupported Linux architecture: ${arch}`);
+    }
+} else {
+    throw new Error(`Unsupported platform: ${platform}`);
 }
 
 // ------------------------
